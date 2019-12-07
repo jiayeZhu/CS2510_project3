@@ -5,6 +5,11 @@ import random
 #     datafile.write('{},{},{}\n'.format(i,random.random(),random.random()))
 # datafile.close()
 #
+datafile = open('input/10k.csv','w')
+for i in range (10000):
+    datafile.write('{},{},{}\n'.format(i,random.random(),random.random()))
+datafile.close()
+#
 # datafile = open('input/10m.csv','w')
 # for i in range (100000):
 #     datafile.write('{},{},{}\n'.format(i,random.random(),random.random()))
