@@ -9,6 +9,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Stage2 {
@@ -19,6 +20,14 @@ public class Stage2 {
     public static class NodeListMapper extends Mapper<Object, Text, Text, Text> {
         private Text cellId = new Text();
         private Text node = new Text();
+        HashMap<Integer,Integer> testMapping;
+        {
+            try {
+                testMapping = Util.loadMapping("idMapping/mapping");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 //        input format: a   xa, ya
 //        output format: cellId   a, xa, ya
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
@@ -27,8 +36,8 @@ public class Stage2 {
                 double x = Double.parseDouble(splits[1]);
                 double y = Double.parseDouble(splits[2]);
                 String oldCellId = Util.getCellId(x, y, range, n);
-//              TODO (get new cellID using old cellID)
-                cellId.set(oldCellId);
+                int newCellId = Util.id2UID(Integer.parseInt(oldCellId) ,testMapping);
+                cellId.set(String.valueOf(newCellId));
                 node.set(nodeId + "," + x + "," + y);
                 context.write(cellId, node);
         }
@@ -87,7 +96,7 @@ public class Stage2 {
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
         System.out.println(fs.listFiles(new Path("input"), false));
-        range = Util.getRange("input/1k.csv");
+        range = Util.getRange("input/50p.csv");
         n = Integer.parseInt(args[2]);
         k = Integer.parseInt(args[3]);
         Job job = Job.getInstance(conf, "stage 2");
@@ -97,7 +106,7 @@ public class Stage2 {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1] + new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(new Date().getTime())));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 }
