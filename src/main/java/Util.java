@@ -6,11 +6,16 @@ import org.apache.hadoop.util.LineReader;
 import org.apache.hadoop.io.Text;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Util {
     public static int log2(double x) {
         return (int) (Math.log(x) / Math.log(2));
+    }
+
+    public static double[] getRange(Path p) {
+        return getRange(p.toString());
     }
 
     public static double[] getRange(String filePath) {
@@ -72,6 +77,10 @@ public class Util {
         if (cellId_y == (int) Math.pow(2, n)) cellId_y--;
         cellId_y = (int) Math.pow(2, n) - 1 - cellId_y;
         return Integer.toString(cellId_x + cellId_y * splitNumber);
+    }
+
+    public static HashMap<Integer, long[][]> generateQTreeFromFile(Path filePath) throws IOException {
+        return generateQTreeFromFile(filePath.toString());
     }
 
     public static HashMap<Integer, long[][]> generateQTreeFromFile(String filePath) throws IOException {
@@ -167,7 +176,33 @@ public class Util {
     public static Double getEuclideanDistance(double x1, double y1, double x2, double y2) {
         double deltaX = x1 - x2;
         double deltaY = y1 - y2;
-        double result = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
+        double result = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         return result;
     }
+
+    public static HashMap<Integer, ArrayList<Point>> loadCell2PointLUT(String LUTPath) throws IOException {
+        return loadCell2PointLUT(new Path(LUTPath));
+    }
+
+    public static HashMap<Integer, ArrayList<Point>> loadCell2PointLUT(Path LUTPath) throws IOException {
+        Configuration conf = new Configuration();
+        FileSystem fs = FileSystem.get(conf);
+        FSDataInputStream inputStream = fs.open(LUTPath);
+        LineReader reader = new LineReader(inputStream);
+        Text text = new Text();
+        HashMap<Integer, ArrayList<Point>> LUT = new HashMap<>();
+        while (reader.readLine(text) != 0) {
+            String[] parts = text.toString().split("->");
+            int cellId = Integer.parseInt(parts[0]);
+            String[] arrStrPoints = parts[1].split(";");
+            ArrayList<Point> points = new ArrayList<>();
+            for (String arrStrPoint : arrStrPoints) {
+                String[] dataInfoParts = arrStrPoint.split(",");
+                points.add(new Point(Long.parseLong(dataInfoParts[0]), Double.parseDouble(dataInfoParts[1]), Double.parseDouble(dataInfoParts[2])));
+            }
+            LUT.put(cellId, points);
+        }
+        return LUT;
+    }
+
 }

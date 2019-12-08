@@ -1,12 +1,12 @@
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.io.ObjectWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.LineReader;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,8 +15,16 @@ public class Merge {
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
         String inputFilePath = args[0];
-        int k = Integer.parseInt(args[1]);
-        HashMap<Integer, long[][]> QTree = Util.generateQTreeFromFile(inputFilePath);
+        FileStatus[] status = fs.listStatus(new Path("input/"));
+        Path[] arrInputFilePath = new Path[status.length];
+        for (int i = 0; i < arrInputFilePath.length; i++) {
+            arrInputFilePath[i] = status[i].getPath();
+        }
+        Path dataFilePath = new Path(args[1]);
+        int k = Integer.parseInt(args[2]);
+//        for (Path p : arrInputFilePath) {
+        Path p = new Path(inputFilePath);
+        HashMap<Integer, long[][]> QTree = Util.generateQTreeFromFile(p);
         Util.printQTree(QTree);
         int n = QTree.size() - 1; // calculate the n;
         //construct the Q-tree using hashmap to represent all the levels
@@ -50,17 +58,61 @@ public class Merge {
         FSDataOutputStream outputStream = fs.create(new Path("idMapping/mapping"));
         for (Map.Entry<Integer, Integer> entry : idMapping.entrySet()) {
             String line = entry.getKey().toString() + "->" + entry.getValue().toString() + "\n";
-            outputStream.write(line.getBytes("UTF-8"));
+            outputStream.write(line.getBytes(StandardCharsets.UTF_8));
         }
-        System.out.println("Mapping file created.");
+        System.out.println("Mapping file created for: "+p.toString());
         outputStream.close();
 
-        /**
-         * Here is the example usage of loading mapping file and use that mapping file to map original cell id to merged UID
-         * */
-//        HashMap<Integer,Integer> testMapping = Util.loadMapping("idMapping/mapping");
-//        for (int i = 0; i < 64; i++) {
-//            System.out.println(i+"=>"+Util.id2UID(i,testMapping));
+        System.out.println("Generating detail point data for each new cell using data file: "+dataFilePath.toString());
+        //read the original data file
+
+        double[] range = Util.getRange(dataFilePath.toString());
+        FSDataInputStream inputStream = fs.open(dataFilePath);
+        LineReader reader = new LineReader(inputStream);
+        Text text = new Text();
+        HashMap<Long, Integer> pointId2cellId = new HashMap<>();
+        HashMap<Integer, ArrayList<String>> cellId2pointId = new HashMap<>();
+        while (reader.readLine(text) != 0) {
+            String[] parts = text.toString().split(",");
+            long pointId = Long.parseLong(parts[0]);
+            double pointX = Double.parseDouble(parts[1]);
+            double pointY = Double.parseDouble(parts[2]);
+            String oldCellId = Util.getCellId(pointX, pointY, range, n);
+            int newCellId = Util.id2UID(Integer.parseInt(oldCellId), idMapping);
+
+            pointId2cellId.put(pointId, newCellId);
+
+            ArrayList<String> list = cellId2pointId.get(newCellId);
+            if (list == null) list = new ArrayList<>();
+            list.add(pointId + "," + pointX + "," + pointY);    //<id,x,y>
+            cellId2pointId.put(newCellId, list);
+        }
+        String[] p_parts = dataFilePath.toString().split("/");
+        outputStream = fs.create(new Path("point2cellLUT/" + p_parts[p_parts.length - 1].split("\\.")[0]));
+        for (Map.Entry<Long, Integer> entry : pointId2cellId.entrySet()) {
+            String line = entry.getKey().toString() + "->" + entry.getValue().toString() + "\n";
+            outputStream.write(line.getBytes(StandardCharsets.UTF_8));
+        }
+        System.out.println("point2cell LUT created.");
+        outputStream.close();
+        outputStream = fs.create(new Path("cell2pointLUT/" + p_parts[p_parts.length - 1].split("\\.")[0]));
+        for (Map.Entry<Integer, ArrayList<String>> entry : cellId2pointId.entrySet()) {
+            String line = entry.getKey().toString() + "->";
+            ArrayList<String> pointList = entry.getValue();
+            for (int i = 0; i < pointList.size(); i++) {
+                if (i != 0) line += ";";
+                line += pointList.get(i);
+            }
+            line += "\n";
+            outputStream.write(line.getBytes(StandardCharsets.UTF_8));
+        }
+        outputStream.close();
 //        }
+
+        /**
+         * example of loading Look Up Table to see detail points info in a particular cell
+         * */
+        HashMap<Integer, ArrayList<Point>> lut =  Util.loadCell2PointLUT("cell2pointLUT/50p");
+        System.out.println(lut.get(70).toString());
     }
 }

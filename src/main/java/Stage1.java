@@ -1,22 +1,26 @@
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 
 public class Stage1 {
-    private static double[] range;
+    private static HashMap<Path, double[]> rangeLUT;
     private static int n;
 
     public static class CellIdMapper extends Mapper<Object, Text, Text, IntWritable> {
@@ -26,6 +30,9 @@ public class Stage1 {
         private Text word = new Text();
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            FileSplit split = (FileSplit) context.getInputSplit();
+            Path filePath = split.getPath();
+            double[] _range = rangeLUT.get(filePath);
             for (int i = 0; i < (int) Math.pow(2, 2 * n); i++) {
                 context.write(new Text(Integer.toString(i)), zero);
             }
@@ -35,7 +42,7 @@ public class Stage1 {
                 String[] splits = value.toString().split(",");
                 double x = Double.parseDouble(splits[1]);
                 double y = Double.parseDouble(splits[2]);
-                word.set(Util.getCellId(x, y, range, n));
+                word.set(Util.getCellId(x, y, _range, n));
                 context.write(word, one);
             }
         }
@@ -58,9 +65,12 @@ public class Stage1 {
 
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
-        System.out.println(fs.listFiles(new Path("input"), false));
-
-        range = Util.getRange("input/50p.csv");
+        FileStatus[] status = fs.listStatus(new Path(args[0]));
+        rangeLUT = new HashMap<>();
+        for (FileStatus fileStatus : status) {
+            Path _p = fileStatus.getPath();
+            rangeLUT.put(_p, Util.getRange(_p));
+        }
         n = Integer.parseInt(args[2]);
         Job job = Job.getInstance(conf, "stage 1");
         job.setJarByClass(Stage1.class);
