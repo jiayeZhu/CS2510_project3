@@ -21,7 +21,7 @@ public class Stage3 {
         private Text cellId = new Text();
         private Text output = new Text();
         List nodeList = new ArrayList<>();
-        String flag = "true";
+        String flag = "false";
 //        input format: a   xa, ya, cellId, [b:dis_b, c:dis_c]
 //        output format: cellId   a   xa, ya, [b:dis_b, c:dis_c], true/false
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
@@ -37,7 +37,7 @@ public class Stage3 {
             for(int i = 4; i < mapSplits.length; i++){
                 nodeList.add(mapSplits[i]);
             }
-//            TODO: check overlap, chang cellID and flag
+//            TODO: check overlap, change cellID and flag
             output.set(nodeId + ", " + x + ", " + y + ", " + nodeList.toString() + ", "+ flag);
             context.write(new Text(Cell), output);
             nodeList.clear();
@@ -46,36 +46,62 @@ public class Stage3 {
 
     public static class CalculationReducer extends Reducer<Text, Text, Text, Text> {
         private Text output = new Text();
+        HashMap<Integer, ArrayList<Point>> lut;
+        {
+            try {
+                lut = Util.loadCell2PointLUT("cell2pointLUT/50p");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 //            input format: cellId   a   xa, ya, [b:dis_b, c:dis_c], true/false
 //            output format: a    xa, ya, cellID, [e:dis_e, f:dis_f]
             String cellID = key.toString();
             String flag;
             List nodeList = new ArrayList<>();
+            SortedMap<String, String> topK = new TreeMap<String, String>();
+            List newNodeList = new ArrayList<>();
             for (Text val: values){
                 String[] reduceSplits = val.toString().split(",|\\[|\\]|\\s+");
                 reduceSplits = Arrays.stream(reduceSplits)
                         .filter(s -> (s != null && s.length() > 0))
                         .toArray(String[]::new);
                 String nodeId = reduceSplits[0];
-//                context.write(key, new Text(nodeId));
-
                 double x = Double.parseDouble(reduceSplits[1]);
                 double y = Double.parseDouble(reduceSplits[2]);
-                for(int i = 3; i < reduceSplits.length-1; i++){
-                    nodeList.add(reduceSplits[i]);
-                }
                 flag = reduceSplits[reduceSplits.length-1];
                 if(flag.equals("true")){
+                    for(int i = 3; i < reduceSplits.length-1; i++){
+                        nodeList.add(reduceSplits[i]);
+                    }
                     output.set(x + ", " + y + ", "+ cellID + "," + nodeList.toString());
                     context.write(new Text(nodeId), output);
                     nodeList.clear();
                 }else{
-//                    TODO: compute knn node in overlapped cell, parameter: cell id,  return: nodeList of that cell
-                    List newNodeList = null;
-                    output.set(x + ", " + y + ", " + ", "+ cellID + "," + newNodeList.toString());
+                    List<Point> nearbyNodes = lut.get(Integer.parseInt(cellID));
+                    for(Point nearbynode : nearbyNodes){
+                        String nearbyId = String.valueOf(nearbynode.id);
+                        if (nodeId.equals(nearbyId)) continue;
+                        Double nearbyx = nearbynode.x;
+                        Double nearbyy = nearbynode.y;
+                        String distance = String.valueOf(Util.getEuclideanDistance(nearbyx, nearbyy, x, y));
+                        if(topK.containsKey(distance)){
+                            distance = distance + "_"+ nearbyId;
+                        }
+                        topK.put(String.valueOf(distance), nearbyId);
+                        if (topK.size() > k){
+                            topK.remove(topK.lastKey());
+                        }
+                    }
+                    for (String nearbyDistance : topK.keySet()) {
+                        String theNodeId = topK.get(nearbyDistance);
+                        newNodeList.add(theNodeId +":"+nearbyDistance.split("_")[0]);
+                    }
+                    output.set(x + ", " + y+ ", "+ cellID + "," + newNodeList.toString());
                     context.write(new Text(nodeId), output);
                     newNodeList.clear();
+                    topK.clear();
                 }
             }
         }
