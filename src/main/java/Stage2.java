@@ -83,10 +83,10 @@ public class Stage2 {
     }
 
     public static void main(String[] args) throws Exception {
+        // input format: input/ output2/ n k
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
         System.out.println(fs.listFiles(new Path("input"), false));
-// input format: input/ output2/ n k
         range = Util.getRange("input/1k.csv");
         n = Integer.parseInt(args[2]);
         k = Integer.parseInt(args[3]);
