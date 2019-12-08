@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
@@ -58,7 +60,7 @@ public class Stage1 {
         FileSystem fs = FileSystem.get(conf);
         System.out.println(fs.listFiles(new Path("input"), false));
 
-        range = Util.getRange("input/1k.csv");
+        range = Util.getRange("input/50p.csv");
         n = Integer.parseInt(args[2]);
         Job job = Job.getInstance(conf, "stage 1");
         job.setJarByClass(Stage1.class);
@@ -68,7 +70,7 @@ public class Stage1 {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1] + new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(new Date().getTime())));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 }
