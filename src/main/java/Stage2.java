@@ -55,7 +55,7 @@ public class Stage2 {
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             List<String> copiedValue = new ArrayList();
             List<String> finalList = new ArrayList();
-            SortedMap<Double, String> topK = new TreeMap<Double, String>();
+            SortedMap<String, String> topK = new TreeMap<String, String>();
             cellId.set(key);
             for (Text val : values){
                 copiedValue.add(val.toString());
@@ -66,22 +66,26 @@ public class Stage2 {
                 nodeId1 = node1splits[0];
                 node1X = Double.parseDouble(node1splits[1]);
                 node1Y = Double.parseDouble(node1splits[2]);
-                Double distance;
+                String distance;
                 for(String noden : copiedValue){
                     String[] nodensplits = noden.split(",");
                     nodeIdn = nodensplits[0];
                     if(nodeId1.equals(nodeIdn)) continue;
                     nodenX = Double.parseDouble(nodensplits[1]);
                     nodenY = Double.parseDouble(nodensplits[2]);
-                    distance = Util.getEuclideanDistance(node1X, node1Y, nodenX, nodenY);
+                    distance = String.valueOf(Util.getEuclideanDistance(node1X, node1Y, nodenX, nodenY));
+//                  if two nodes have the same distance to the current node
+                    if(topK.containsKey(distance)){
+                            distance = distance + "_"+ nodeIdn;
+                    }
                     topK.put(distance, nodeIdn);
                     if (topK.size() > k){
                         topK.remove(topK.lastKey());
                     }
                 }
-                for (Double nodeDistance : topK.keySet()) {
+                for (String nodeDistance : topK.keySet()) {
                     String nodeId = topK.get(nodeDistance);
-                    finalList.add(nodeId+":"+nodeDistance);
+                    finalList.add(nodeId+":"+nodeDistance.split("_")[0]);
                 }
                 result.set(node1X + ", " + node1Y + ", " + cellId + ", "+ finalList.toString());
                 context.write(newKey, result);
