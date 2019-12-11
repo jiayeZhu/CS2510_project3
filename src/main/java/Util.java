@@ -1,4 +1,5 @@
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -293,5 +294,24 @@ public class Util {
             }
         }
         return cellList;
+    }
+    public static boolean getMergeInHdfs(Configuration config,String src, String dest) throws IllegalArgumentException, IOException {
+        FileSystem fs = FileSystem.get(config);
+        Path srcPath = new Path(src);
+        Path dstPath = new Path(dest);
+
+        // Check if the path already exists
+        if (!(fs.exists(srcPath))) {
+            System.err.println("Path " + src + " does not exists!");
+            return false;
+        }
+
+//        if (!(fs.exists(dstPath))) {
+////            System.err.println("Path " + dest + " does not exists!");
+//            fs.create(new Path(dest));
+//            fs.close();
+////            return false;
+//        }
+        return FileUtil.copyMerge(fs, srcPath, fs, dstPath, false, config, null);
     }
 }

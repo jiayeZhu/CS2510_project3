@@ -102,14 +102,14 @@ public class Stage2 {
         // input format: input/ output2/ n k
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
-        range = Util.getRange("input/23p.csv");
+        range = Util.getRange("input/data.csv");
         n = Integer.parseInt(args[2]);
         k = Integer.parseInt(args[3]);
         Job job = Job.getInstance(conf, "stage 2");
         job.setJarByClass(Stage2.class);
         job.setMapperClass(Stage2.NodeListMapper.class);
         job.setReducerClass(Stage2.NodeSumReducer.class);
-        job.setNumReduceTasks(1);
+        job.setNumReduceTasks(Integer.parseInt(args[4]));
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));

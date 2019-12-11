@@ -77,11 +77,17 @@ public class Stage1 {
         job.setMapperClass(Stage1.CellIdMapper.class);
         job.setCombinerClass(Stage1.IntSumReducer.class);
         job.setReducerClass(Stage1.IntSumReducer.class);
-        job.setNumReduceTasks(1);
+        job.setNumReduceTasks(Integer.parseInt(args[4])); //arg[3] is k but not used here
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        int exitSig = job.waitForCompletion(true) ? 0 : 1;
+        if (exitSig == 1) System.exit(1);
+        System.out.println("====== start merging ======");
+        Util.getMergeInHdfs(conf,args[1],args[1]+"../stage1_merged/stage1_output.txt");
+        Merge.main(new String[]{args[1]+"../stage1_merged/stage1_output.txt","input/data.csv",args[3]}); //arg[3] is k
+        System.out.println("====== merging finished ======");
+        System.exit(0);
     }
 }

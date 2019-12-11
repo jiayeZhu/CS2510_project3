@@ -15,17 +15,17 @@ public class Merge {
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
         String inputFilePath = args[0];
-        FileStatus[] status = fs.listStatus(new Path("input/"));
-        Path[] arrInputFilePath = new Path[status.length];
-        for (int i = 0; i < arrInputFilePath.length; i++) {
-            arrInputFilePath[i] = status[i].getPath();
-        }
+//        FileStatus[] status = fs.listStatus(new Path("input/"));
+//        Path[] arrInputFilePath = new Path[status.length];
+//        for (int i = 0; i < arrInputFilePath.length; i++) {
+//            arrInputFilePath[i] = status[i].getPath();
+//        }
         Path dataFilePath = new Path(args[1]);
         int k = Integer.parseInt(args[2]);
 //        for (Path p : arrInputFilePath) {
         Path p = new Path(inputFilePath);
         HashMap<Integer, long[][]> QTree = Util.generateQTreeFromFile(p);
-        Util.printQTree(QTree);
+//        Util.printQTree(QTree);
         int n = QTree.size() - 1; // calculate the n;
         //construct the Q-tree using hashmap to represent all the levels
         HashMap<Integer, Integer> idMapping = new HashMap<>();

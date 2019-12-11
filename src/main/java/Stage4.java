@@ -82,11 +82,17 @@ public class Stage4 {
         job.setJarByClass(Stage4.class);
         job.setMapperClass(Stage4.simplificationMapper.class);
         job.setReducerClass(Stage4.finalSumReducer.class);
-        job.setNumReduceTasks(1);
+        job.setNumReduceTasks(Integer.parseInt(args[4]));
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+//        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        int exitSig = job.waitForCompletion(true) ? 0 : 1;
+        if (exitSig == 1) System.exit(1);
+        System.out.println("====== start merging results ======");
+        Util.getMergeInHdfs(conf,args[1],args[1]+"../final/result.txt");
+        System.out.println("====== results merged ======");
+        System.exit(0);
     }
 }

@@ -140,12 +140,12 @@ public class Stage3 {
         // input format: input/ output3/ n k
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
-        range = Util.getRange("input/23p.csv");
+        range = Util.getRange("input/data.csv");
         n = Integer.parseInt(args[2]);
         k = Integer.parseInt(args[3]);
         try {
             mapping = Util.loadMapping("idMapping/mapping");
-            lut = Util.loadCell2PointLUT("cell2pointLUT/23p");
+            lut = Util.loadCell2PointLUT("cell2pointLUT/data");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -153,7 +153,7 @@ public class Stage3 {
         job.setJarByClass(Stage3.class);
         job.setMapperClass(Stage3.CheckMapper.class);
         job.setReducerClass(Stage3.CalculationReducer.class);
-        job.setNumReduceTasks(1);
+        job.setNumReduceTasks(Integer.parseInt(args[4]));
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));

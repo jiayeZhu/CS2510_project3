@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors as KNN
 
 
-f = open('input/23p.csv','r')
+f = open('input/data.csv','r')
 lines = f.readlines()
 
 def calD(x1,y1,x2,y2):
