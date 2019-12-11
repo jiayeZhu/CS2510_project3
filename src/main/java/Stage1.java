@@ -20,7 +20,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 
 public class Stage1 {
-    private static HashMap<Path, double[]> rangeLUT;
+    private static double[] range;
     private static int n;
 
     public static class CellIdMapper extends Mapper<Object, Text, Text, IntWritable> {
@@ -31,8 +31,6 @@ public class Stage1 {
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             FileSplit split = (FileSplit) context.getInputSplit();
-            Path filePath = split.getPath();
-            double[] _range = rangeLUT.get(filePath);
             for (int i = 0; i < (int) Math.pow(2, 2 * n); i++) {
                 context.write(new Text(Integer.toString(i)), zero);
             }
@@ -42,7 +40,7 @@ public class Stage1 {
                 String[] splits = value.toString().split(",");
                 double x = Double.parseDouble(splits[1]);
                 double y = Double.parseDouble(splits[2]);
-                word.set(Util.getCellId(x, y, _range, n));
+                word.set(Util.getCellId(x, y, range, n));
                 context.write(word, one);
             }
         }
@@ -65,12 +63,13 @@ public class Stage1 {
 
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
-        FileStatus[] status = fs.listStatus(new Path(args[0]));
-        rangeLUT = new HashMap<>();
-        for (FileStatus fileStatus : status) {
-            Path _p = fileStatus.getPath();
-            rangeLUT.put(_p, Util.getRange(_p));
-        }
+//        FileStatus[] status = fs.listStatus(new Path(args[0]));
+//        rangeLUT = new HashMap<>();
+//        for (FileStatus fileStatus : status) {
+//            Path _p = fileStatus.getPath();
+        Path _p = new Path(args[0] + "data.csv");
+        range = Util.getRange(_p);
+//        }
         n = Integer.parseInt(args[2]);
         Job job = Job.getInstance(conf, "stage 1");
         job.setJarByClass(Stage1.class);
@@ -85,8 +84,8 @@ public class Stage1 {
         int exitSig = job.waitForCompletion(true) ? 0 : 1;
         if (exitSig == 1) System.exit(1);
         System.out.println("====== start merging ======");
-        Util.getMergeInHdfs(conf,args[1],args[1]+"../stage1_merged/stage1_output.txt");
-        Merge.main(new String[]{args[1]+"../stage1_merged/stage1_output.txt","input/data.csv",args[3]}); //arg[3] is k
+        Util.getMergeInHdfs(conf, args[1], args[1] + "../stage1_merged/stage1_output.txt");
+        Merge.main(new String[]{args[1] + "../stage1_merged/stage1_output.txt", "input/data.csv", args[3]}); //arg[3] is k
         System.out.println("====== merging finished ======");
         System.exit(0);
     }

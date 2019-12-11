@@ -47,17 +47,14 @@ public class Stage3 {
                 flag = "true";
                 output.set(nodeId + ", " + x + ", " + y + ", " + nodeList.toString() + ", "+ flag);
                 context.write(cellId, output);
-                System.out.println(cellId.toString()+"\t"+output.toString());
             }
             else {
                 flag = "false";
                 output.set(nodeId + ", " + x + ", " + y + ", " + nodeList.toString() + ", "+ flag);
                 context.write(cellId, output);
-                System.out.println(cellId.toString()+"\t"+output.toString());
                 for (int i = 0; i < overlappedList.size(); i++) {
                     cellId.set(new Text(String.valueOf(overlappedList.get(i))));
                     context.write(cellId, output);
-                    System.out.println(cellId.toString()+"\t"+output.toString());
                 }
             }
 
