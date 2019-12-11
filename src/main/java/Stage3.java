@@ -13,11 +13,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Stage3 {
-    private static double[] range;
-    private static int n;
-    private static int k;
-    private static HashMap<Integer, Integer> mapping;
-    private static HashMap<Integer, ArrayList<Point>> lut;
+
+//    private static HashMap<Integer, Integer> mapping;
+//    private static HashMap<Integer, ArrayList<Point>> lut;
 
     public static class CheckMapper extends Mapper<Object, Text, Text, Text> {
         private Text cellId = new Text();
@@ -28,6 +26,14 @@ public class Stage3 {
 //        input format: a   xa, ya, cellId, [b:dis_b, c:dis_c]
 //        output format: cellId   a   xa, ya, [b:dis_b, c:dis_c], true/false
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            HashMap<Integer, Integer> mapping;
+            HashMap<Integer, ArrayList<Point>> lut;
+            mapping = Util.loadMapping("idMapping/mapping");
+            lut = Util.loadCell2PointLUT("cell2pointLUT/data");
+
+            Configuration conf = context.getConfiguration();
+            double[] range = Arrays.stream(conf.get("range").split(",")).mapToDouble(Double::parseDouble).toArray();
+            int n = Integer.parseInt(conf.get("n"));
 //          split and remove null
             String[] mapSplits = value.toString().split(",|\\[|\\]|\\s+");
             mapSplits = Arrays.stream(mapSplits)
@@ -75,6 +81,10 @@ public class Stage3 {
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 //            input format: cellId   a   xa, ya, [b:dis_b, c:dis_c], true/false
 //            output format: a    xa, ya, cellID, [e:dis_e, f:dis_f]
+            Configuration conf = context.getConfiguration();
+            int k = Integer.parseInt(conf.get("k"));
+            HashMap<Integer, ArrayList<Point>> lut;
+            lut = Util.loadCell2PointLUT("cell2pointLUT/data");
             String cellID = key.toString();
             String flag;
             List nodeList = new ArrayList<>();
@@ -137,15 +147,11 @@ public class Stage3 {
         // input format: input/ output3/ n k
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
+        double[] range;
         range = Util.getRange("input/data.csv");
-        n = Integer.parseInt(args[2]);
-        k = Integer.parseInt(args[3]);
-        try {
-            mapping = Util.loadMapping("idMapping/mapping");
-            lut = Util.loadCell2PointLUT("cell2pointLUT/data");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        conf.set("n",args[2]);
+        conf.set("k",args[3]);
+        conf.set("range",range[0]+","+range[1]+","+range[2]);
         Job job = Job.getInstance(conf, "stage 3");
         job.setJarByClass(Stage3.class);
         job.setMapperClass(Stage3.CheckMapper.class);

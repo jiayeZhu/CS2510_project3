@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.StringTokenizer;
@@ -20,9 +21,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 
 public class Stage1 {
-    private static double[] range;
-    private static int n;
-
     public static class CellIdMapper extends Mapper<Object, Text, Text, IntWritable> {
 
         private final static IntWritable one = new IntWritable(1);
@@ -30,6 +28,9 @@ public class Stage1 {
         private Text word = new Text();
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            Configuration conf = context.getConfiguration();
+            double[] range = Arrays.stream(conf.get("range").split(",")).mapToDouble(Double::parseDouble).toArray();
+            int n = Integer.parseInt(conf.get("n"));
             FileSplit split = (FileSplit) context.getInputSplit();
             for (int i = 0; i < (int) Math.pow(2, 2 * n); i++) {
                 context.write(new Text(Integer.toString(i)), zero);
@@ -63,14 +64,11 @@ public class Stage1 {
 
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
-//        FileStatus[] status = fs.listStatus(new Path(args[0]));
-//        rangeLUT = new HashMap<>();
-//        for (FileStatus fileStatus : status) {
-//            Path _p = fileStatus.getPath();
+
         Path _p = new Path(args[0] + "data.csv");
-        range = Util.getRange(_p);
-//        }
-        n = Integer.parseInt(args[2]);
+        double[] range = Util.getRange(_p);
+        conf.set("n",args[2]);
+        conf.set("range",range[0]+","+range[1]+","+range[2]);
         Job job = Job.getInstance(conf, "stage 1");
         job.setJarByClass(Stage1.class);
         job.setMapperClass(Stage1.CellIdMapper.class);

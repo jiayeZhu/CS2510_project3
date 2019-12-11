@@ -13,9 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Stage2 {
-    private static double[] range;
-    private static int n;
-    private static int k;
+
 
     public static class NodeListMapper extends Mapper<Object, Text, Text, Text> {
         private Text cellId = new Text();
@@ -33,6 +31,9 @@ public class Stage2 {
         //        input format: a   xa, ya
 //        output format: cellId   a, xa, ya
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            Configuration conf = context.getConfiguration();
+            double[] range = Arrays.stream(conf.get("range").split(",")).mapToDouble(Double::parseDouble).toArray();
+            int n = Integer.parseInt(conf.get("n"));
             String[] splits = value.toString().split(",");
             String nodeId = splits[0];
             double x = Double.parseDouble(splits[1]);
@@ -56,6 +57,8 @@ public class Stage2 {
         private Text cellId = new Text();
 
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+            Configuration conf = context.getConfiguration();
+            int k = Integer.parseInt(conf.get("k"));
             List<String> copiedValue = new ArrayList();
             List<String> finalList = new ArrayList();
             SortedMap<String, String> topK = new TreeMap<String, String>();
@@ -102,9 +105,11 @@ public class Stage2 {
         // input format: input/ output2/ n k
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
+        double[] range;
         range = Util.getRange("input/data.csv");
-        n = Integer.parseInt(args[2]);
-        k = Integer.parseInt(args[3]);
+        conf.set("n",args[2]);
+        conf.set("k",args[3]);
+        conf.set("range",range[0]+","+range[1]+","+range[2]);
         Job job = Job.getInstance(conf, "stage 2");
         job.setJarByClass(Stage2.class);
         job.setMapperClass(Stage2.NodeListMapper.class);

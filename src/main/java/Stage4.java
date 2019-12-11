@@ -13,8 +13,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Stage4 {
-    private static int n;
-    private static int k;
 
     public static class simplificationMapper extends Mapper<Object, Text, Text, Text> {
 //        input format: a   xa, ya, cellId, [b:dis_b, c:dis_c]
@@ -39,6 +37,8 @@ public class Stage4 {
 //        input format: a  [b:dis_b, c:dis_c], [e:dis_e, f:dis_f]
 //        output format: a   [b:dis_b, f:dis_f]
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+            Configuration conf = context.getConfiguration();
+            int k = Integer.parseInt(conf.get("k"));
             List totalList = new ArrayList<>();
             String nodeId;
             String distance;
@@ -76,8 +76,7 @@ public class Stage4 {
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
         System.out.println(fs.listFiles(new Path("input"), false));
-        n = Integer.parseInt(args[2]);
-        k = Integer.parseInt(args[3]);
+        conf.set("k",args[3]);
         Job job = Job.getInstance(conf, "stage 4");
         job.setJarByClass(Stage4.class);
         job.setMapperClass(Stage4.simplificationMapper.class);
