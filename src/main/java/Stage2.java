@@ -24,7 +24,7 @@ public class Stage2 {
 
         {
             try {
-                testMapping = Util.loadMapping("idMapping/mapping");
+                testMapping = Util.loadMapping("idMapping/mapping",false);
             } catch (IOException e) {
                 e.printStackTrace();
             }

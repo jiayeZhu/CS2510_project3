@@ -86,6 +86,10 @@ public class Merge {
             if (list == null) list = new ArrayList<>();
             list.add(pointId + "," + pointX + "," + pointY);    //<id,x,y>
             cellId2pointId.put(newCellId, list);
+            ArrayList<String> old_list = cellId2pointId.get(Integer.parseInt(oldCellId));
+            if (old_list == null) old_list = new ArrayList<>();
+            old_list.add(pointId + "," + pointX + "," + pointY);    //<id,x,y>
+            cellId2pointId.put(Integer.parseInt(oldCellId), old_list);
         }
         String[] p_parts = dataFilePath.toString().split("/");
         outputStream = fs.create(new Path("point2cellLUT/" + p_parts[p_parts.length - 1].split("\\.")[0]));
