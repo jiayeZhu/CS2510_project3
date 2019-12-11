@@ -17,11 +17,13 @@ public class Stage3 {
     private static int n;
     private static int k;
     private static HashMap<Integer, Integer> mapping;
+    private static HashMap<Integer, ArrayList<Point>> lut;
 
     public static class CheckMapper extends Mapper<Object, Text, Text, Text> {
         private Text cellId = new Text();
         private Text output = new Text();
-        List nodeList = new ArrayList<>();
+        private List nodeList = new ArrayList<>();
+
         String flag = "false";
 //        input format: a   xa, ya, cellId, [b:dis_b, c:dis_c]
 //        output format: cellId   a   xa, ya, [b:dis_b, c:dis_c], true/false
@@ -41,7 +43,7 @@ public class Stage3 {
             }
             double r = Double.parseDouble(mapSplits[mapSplits.length-1].split(":")[1]);
 //            TODO: check overlap, change cellID and flag
-            ArrayList<Integer> overlappedList = Util.getOverlappedCellList(x,y,Integer.parseInt(Cell),r,n,range,mapping);
+            ArrayList<Integer> overlappedList = Util.getOverlappedCellList(x,y,Integer.parseInt(Cell),r,n,range,mapping,lut);
             if (overlappedList.size()==0){
                 flag = "true";
                 output.set(nodeId + ", " + x + ", " + y + ", " + nodeList.toString() + ", "+ flag);
@@ -66,14 +68,14 @@ public class Stage3 {
 
     public static class CalculationReducer extends Reducer<Text, Text, Text, Text> {
         private Text output = new Text();
-        HashMap<Integer, ArrayList<Point>> lut;
-        {
-            try {
-                lut = Util.loadCell2PointLUT("cell2pointLUT/23p");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+//        HashMap<Integer, ArrayList<Point>> lut;
+//        {
+//            try {
+//                lut = Util.loadCell2PointLUT("cell2pointLUT/23p");
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 //            input format: cellId   a   xa, ya, [b:dis_b, c:dis_c], true/false
 //            output format: a    xa, ya, cellID, [e:dis_e, f:dis_f]
@@ -137,6 +139,7 @@ public class Stage3 {
         k = Integer.parseInt(args[3]);
         try {
             mapping = Util.loadMapping("idMapping/mapping");
+            lut = Util.loadCell2PointLUT("cell2pointLUT/23p");
         } catch (IOException e) {
             e.printStackTrace();
         }

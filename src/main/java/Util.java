@@ -221,7 +221,7 @@ public class Util {
         return new int[]{n - height, base};
     }
 
-    public static ArrayList<Integer> getOverlappedCellList(double x, double y, int cellId, double r, int n, double[] range, HashMap<Integer, Integer> mapping) throws IOException {
+    public static ArrayList<Integer> getOverlappedCellList(double x, double y, int cellId, double r, int n, double[] range, HashMap<Integer, Integer> mapping,HashMap<Integer, ArrayList<Point>> lut) throws IOException {
         int[] levelNbase = getCellLevelAndBase(cellId, n);
         int cellLevel = levelNbase[0];
         int cellBase = levelNbase[1];
@@ -288,7 +288,7 @@ public class Util {
                         || getEuclideanDistance(x, y, _x_max, _y_max) <= r) {
                     int _id = C + R * splitNumber;
 
-                    if (id2UID(_id, mapping) != cellId) cellList.add(_id);
+                    if (id2UID(_id, mapping) != cellId && lut.get(_id) != null) cellList.add(_id);
                 }
             }
         }
