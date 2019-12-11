@@ -153,11 +153,12 @@ public class Util {
 
     public static int id2UID(int id, HashMap<Integer, Integer> mapping) throws IOException {
         int result = id;
+//        System.out.println(id);
         while (mapping.get(result) != result) result = mapping.get(result);
         return result;
     }
 
-    public static HashMap<Integer, Integer> loadMapping(String mappingFilePath, boolean map2level) throws IOException {
+    public static HashMap<Integer, Integer> loadMapping(String mappingFilePath) throws IOException {
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
         FSDataInputStream inputStream = fs.open(new Path(mappingFilePath));
@@ -166,14 +167,14 @@ public class Util {
         HashMap<Integer, Integer> mapping = new HashMap<>();
         while (reader.readLine(text) != 0) {
             String[] parts = text.toString().split("->");
-            int source = Integer.parseInt(parts[0].split("@")[0]);
-            int level = Integer.parseInt(parts[0].split("@")[1]);
+            int source = Integer.parseInt(parts[0]);
+//            int level = Integer.parseInt(parts[0].split("@")[1]);
             int target = Integer.parseInt(parts[1]);
-            if (map2level) {
-                mapping.put(source, level);
-            } else {
+//            if (map2level) {
+//                mapping.put(source, level);
+//            } else {
                 mapping.put(source, target);
-            }
+//            }
         }
         return mapping;
     }
@@ -213,7 +214,7 @@ public class Util {
     public static int[] getCellLevelAndBase(int cellId, int n) {
         int base = 0;
         int height = 0;
-        while (base + (int) Math.pow(2, 2 * (n - height - 1)) <= cellId) {
+        while (base + (int) Math.pow(2, 2 * (n - height)) < cellId) {
             base += (int) Math.pow(2, 2 * (n - height));
             height++;
         }
@@ -273,6 +274,7 @@ public class Util {
         int row_start = (int) Math.floor((Whole_y_max - square_y_max) / minBorderLength);
         int row_end = (int) Math.floor((Whole_y_max - square_y_min) / minBorderLength);
 
+//        System.out.println("x:"+x+"\ty:"+y);
         for (int C = col_start; C < col_end; C++) {
             for (int R = row_start; R < row_end; R++) {
                 //calculate 4 corner to see if the small cell is overlapped or not
@@ -285,6 +287,7 @@ public class Util {
                         || getEuclideanDistance(x, y, _x_max, _y_min) <= r
                         || getEuclideanDistance(x, y, _x_max, _y_max) <= r) {
                     int _id = C + R * splitNumber;
+
                     if (id2UID(_id, mapping) != cellId) cellList.add(_id);
                 }
             }

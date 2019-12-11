@@ -116,7 +116,7 @@ public class Merge {
         /**
          * example of loading Look Up Table to see detail points info in a particular cell
          * */
-        HashMap<Integer, ArrayList<Point>> lut =  Util.loadCell2PointLUT("cell2pointLUT/50p");
-        System.out.println(lut.get(70).toString());
+//        HashMap<Integer, ArrayList<Point>> lut =  Util.loadCell2PointLUT("cell2pointLUT/23p");
+//        System.out.println(lut.get(83).toString());
     }
 }

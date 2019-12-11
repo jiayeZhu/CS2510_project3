@@ -24,7 +24,7 @@ public class Stage2 {
 
         {
             try {
-                testMapping = Util.loadMapping("idMapping/mapping",false);
+                testMapping = Util.loadMapping("idMapping/mapping");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -102,7 +102,7 @@ public class Stage2 {
         // input format: input/ output2/ n k
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
-        range = Util.getRange("input/50p.csv");
+        range = Util.getRange("input/23p.csv");
         n = Integer.parseInt(args[2]);
         k = Integer.parseInt(args[3]);
         Job job = Job.getInstance(conf, "stage 2");

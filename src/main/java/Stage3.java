@@ -1,4 +1,3 @@
-import com.sun.xml.bind.v2.TODO;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -14,8 +13,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Stage3 {
+    private static double[] range;
     private static int n;
     private static int k;
+    private static HashMap<Integer, Integer> mapping;
 
     public static class CheckMapper extends Mapper<Object, Text, Text, Text> {
         private Text cellId = new Text();
@@ -34,12 +35,31 @@ public class Stage3 {
             double x = Double.parseDouble(mapSplits[1]);
             double y = Double.parseDouble(mapSplits[2]);
             String Cell = mapSplits[3];
+            cellId.set(Cell);
             for(int i = 4; i < mapSplits.length; i++){
                 nodeList.add(mapSplits[i]);
             }
+            double r = Double.parseDouble(mapSplits[mapSplits.length-1].split(":")[1]);
 //            TODO: check overlap, change cellID and flag
-            output.set(nodeId + ", " + x + ", " + y + ", " + nodeList.toString() + ", "+ flag);
-            context.write(new Text(Cell), output);
+            ArrayList<Integer> overlappedList = Util.getOverlappedCellList(x,y,Integer.parseInt(Cell),r,n,range,mapping);
+            if (overlappedList.size()==0){
+                flag = "true";
+                output.set(nodeId + ", " + x + ", " + y + ", " + nodeList.toString() + ", "+ flag);
+                context.write(cellId, output);
+                System.out.println(cellId.toString()+"\t"+output.toString());
+            }
+            else {
+                flag = "false";
+                output.set(nodeId + ", " + x + ", " + y + ", " + nodeList.toString() + ", "+ flag);
+                context.write(cellId, output);
+                System.out.println(cellId.toString()+"\t"+output.toString());
+                for (int i = 0; i < overlappedList.size(); i++) {
+                    cellId.set(new Text(String.valueOf(overlappedList.get(i))));
+                    context.write(cellId, output);
+                    System.out.println(cellId.toString()+"\t"+output.toString());
+                }
+            }
+
             nodeList.clear();
         }
     }
@@ -49,7 +69,7 @@ public class Stage3 {
         HashMap<Integer, ArrayList<Point>> lut;
         {
             try {
-                lut = Util.loadCell2PointLUT("cell2pointLUT/50p");
+                lut = Util.loadCell2PointLUT("cell2pointLUT/23p");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -112,9 +132,14 @@ public class Stage3 {
         // input format: input/ output3/ n k
         Configuration conf = new Configuration();
         FileSystem fs = FileSystem.get(conf);
-        System.out.println(fs.listFiles(new Path("input"), false));
+        range = Util.getRange("input/23p.csv");
         n = Integer.parseInt(args[2]);
         k = Integer.parseInt(args[3]);
+        try {
+            mapping = Util.loadMapping("idMapping/mapping");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Job job = Job.getInstance(conf, "stage 3");
         job.setJarByClass(Stage3.class);
         job.setMapperClass(Stage3.CheckMapper.class);
