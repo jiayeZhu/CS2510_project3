@@ -82,6 +82,7 @@ public class Stage4 {
         job.setJarByClass(Stage4.class);
         job.setMapperClass(Stage4.simplificationMapper.class);
         job.setReducerClass(Stage4.finalSumReducer.class);
+        job.setNumReduceTasks(1);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));

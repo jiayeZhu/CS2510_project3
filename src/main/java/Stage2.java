@@ -109,6 +109,7 @@ public class Stage2 {
         job.setJarByClass(Stage2.class);
         job.setMapperClass(Stage2.NodeListMapper.class);
         job.setReducerClass(Stage2.NodeSumReducer.class);
+        job.setNumReduceTasks(1);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));

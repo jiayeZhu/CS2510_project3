@@ -77,6 +77,7 @@ public class Stage1 {
         job.setMapperClass(Stage1.CellIdMapper.class);
         job.setCombinerClass(Stage1.IntSumReducer.class);
         job.setReducerClass(Stage1.IntSumReducer.class);
+        job.setNumReduceTasks(1);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
