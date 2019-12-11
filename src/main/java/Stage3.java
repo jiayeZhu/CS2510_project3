@@ -42,7 +42,6 @@ public class Stage3 {
                 nodeList.add(mapSplits[i]);
             }
             double r = Double.parseDouble(mapSplits[mapSplits.length-1].split(":")[1]);
-//            TODO: check overlap, change cellID and flag
             ArrayList<Integer> overlappedList = Util.getOverlappedCellList(x,y,Integer.parseInt(Cell),r,n,range,mapping,lut);
             if (overlappedList.size()==0){
                 flag = "true";
@@ -101,29 +100,36 @@ public class Stage3 {
                     context.write(new Text(nodeId), output);
                     nodeList.clear();
                 }else{
-                    List<Point> nearbyNodes = lut.get(Integer.parseInt(cellID));
-                    for(Point nearbynode : nearbyNodes){
-                        String nearbyId = String.valueOf(nearbynode.id);
-                        if (nodeId.equals(nearbyId)) continue;
-                        Double nearbyx = nearbynode.x;
-                        Double nearbyy = nearbynode.y;
-                        String distance = String.valueOf(Util.getEuclideanDistance(nearbyx, nearbyy, x, y));
-                        if(topK.containsKey(distance)){
-                            distance = distance + "_"+ nearbyId;
+                    try {
+                        List<Point> nearbyNodes = lut.get(Integer.parseInt(cellID));
+                        output.set("failed" + cellID + "," + nearbyNodes.toString());
+                        for (Point nearbynode : nearbyNodes) {
+                            String nearbyId = String.valueOf(nearbynode.id);
+                            if (nodeId.equals(nearbyId)) continue;
+                            Double nearbyx = nearbynode.x;
+                            Double nearbyy = nearbynode.y;
+                            String distance = String.valueOf(Util.getEuclideanDistance(nearbyx, nearbyy, x, y));
+                            if (topK.containsKey(distance)) {
+                                distance = distance + "_" + nearbyId;
+                            }
+                            topK.put(String.valueOf(distance), nearbyId);
+                            if (topK.size() > k) {
+                                topK.remove(topK.lastKey());
+                            }
                         }
-                        topK.put(String.valueOf(distance), nearbyId);
-                        if (topK.size() > k){
-                            topK.remove(topK.lastKey());
+                        for (String nearbyDistance : topK.keySet()) {
+                            String theNodeId = topK.get(nearbyDistance);
+                            newNodeList.add(theNodeId + ":" + nearbyDistance.split("_")[0]);
                         }
+                        output.set(x + ", " + y + ", " + cellID + "," + newNodeList.toString());
+                        context.write(new Text(nodeId), output);
+                        newNodeList.clear();
+                        topK.clear();
+                    }catch (Exception e){
+                        output.set("failed, cell id = "+ cellID);
+                        context.write(new Text(nodeId), output);
+
                     }
-                    for (String nearbyDistance : topK.keySet()) {
-                        String theNodeId = topK.get(nearbyDistance);
-                        newNodeList.add(theNodeId +":"+nearbyDistance.split("_")[0]);
-                    }
-                    output.set(x + ", " + y+ ", "+ cellID + "," + newNodeList.toString());
-                    context.write(new Text(nodeId), output);
-                    newNodeList.clear();
-                    topK.clear();
                 }
             }
         }
@@ -147,10 +153,11 @@ public class Stage3 {
         job.setJarByClass(Stage3.class);
         job.setMapperClass(Stage3.CheckMapper.class);
         job.setReducerClass(Stage3.CalculationReducer.class);
+        job.setNumReduceTasks(1);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1] + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date().getTime())));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 }
